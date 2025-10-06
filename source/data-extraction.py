@@ -88,7 +88,7 @@ if __name__ == "__main__":
 
     # Convert to DataFrame
     activities_df = pd.DataFrame(activities_data)
-    coordinates_df = pd.DataFrame(coordinates_data, columns=["lat", "lng"])
+    coordinates_df = pd.DataFrame(coordinates_data)#, columns=["lat", "lng"])
 
     # Save locally in the repo
     write_data_to_csv(activities_df, "activities_data.csv")
