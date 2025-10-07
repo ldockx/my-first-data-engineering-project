@@ -3,11 +3,19 @@ import json
 import pandas as pd
 import time
 import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Replace these with your own Strava API credentials
-CLIENT_ID = "179478" #client_id
-CLIENT_SECRET = "22acdfc6850d9a81a189b4a42d9b4fa8fead0dfb" #client_secret
-REFRESH_TOKEN = "99ef40a0681db2d625f1e43531b91d6c516a6949" #refresh_token
+CLIENT_ID = os.getenv("STRAVA_CLIENT_ID")
+CLIENT_SECRET = os.getenv("STRAVA_CLIENT_SECRET") 
+REFRESH_TOKEN = os.getenv("STRAVA_REFRESH_TOKEN") 
+
+# Validate that all credentials are loaded
+if not all([CLIENT_ID, CLIENT_SECRET, REFRESH_TOKEN]):
+    raise ValueError("Missing Strava credentials! Please check your .env file.")
 
 # Step 1: Get a new access token using your refresh token
 def get_access_token():
