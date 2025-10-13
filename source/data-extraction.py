@@ -1,5 +1,5 @@
 import requests
-import json
+#import json
 import pandas as pd
 import time
 import os
@@ -58,24 +58,65 @@ def get_all_activities(access_token, per_page=200):
     return activities
 
 def get_coordinates_of_activities(access_token, activities):
-    all_coords = []
+    """still fix this to collect all the stream data, even if something is missing"""
+
+    all_streams_data = []
 
     for activity in activities:
         activity_id = activity["id"]
         streams_url = f"https://www.strava.com/api/v3/activities/{activity_id}/streams"
-        params = {"keys": "latlng", "key_by_type": "true"}
+        params = {"keys": "time,latlng,distance,altitude,velocity_smooth,heartrate,cadence,watts,moving,grade_smooth,temp", "key_by_type": "true"}
         headers = {"Authorization": f"Bearer {access_token}"}
         streams_res = requests.get(streams_url, headers=headers, params=params)
-        streams_res.raise_for_status()
+        #streams_res.raise_for_status()
         streams = streams_res.json()
 
-        if "latlng" in streams:
-            coords = streams["latlng"]["data"]  # list of [lat, lng]
-            all_coords.extend(coords)
+        #if "latlng" in streams:
+        #    coords = streams["latlng"]["data"]  # list of [lat, lng]
+        #    coords_with_id = [[activity_id, "coordinates", [lat, lng]] for lat, lng in coords]
+        #    #all_coords.extend(coords_with_id)
+        #    all_streams_data.extend(coords_with_id)
+        
+        #if "distance" in streams:
+        #    distances = streams["distance"]["data"]
+        #    distance_with_id = [[activity_id, "distances", distance] for distance in distances]
+        #    all_streams_data.extend(distance_with_id)
 
-    print(f"Collected {len(all_coords)} GPS points.")
+        # Check if we have the minimum required data (time and latlng)
+        if "time" not in streams or "latlng" not in streams:
+            print(f"Activity {activity_id} missing required stream data")
+            continue
 
-    return all_coords
+        num_points = len(streams["time"]["data"])
+         
+        #create df for streams data
+        streams_df = pd.DataFrame({
+            "activity_id": activity_id,
+            "time": streams["time"]["data"],
+            "latlng": streams["latlng"]["data"],
+            "distance": streams.get("distance", {}).get("data", [None] * num_points),
+            "altitude": streams.get("altitude", {}).get("data", [None] * num_points),
+            "velocity_smooth": streams.get("velocity_smooth", {}).get("data", [None] * num_points),
+            "heartrate": streams.get("heartrate", {}).get("data", [None] * num_points),
+            "cadence": streams.get("cadence", {}).get("data", [None] * num_points),
+            "watts": streams.get("watts", {}).get("data", [None] * num_points),
+            "moving": streams.get("moving", {}).get("data", [None] * num_points),
+            "grade_smooth": streams.get("grade_smooth", {}).get("data", [None] * num_points),
+            "temp": streams.get("temp", {}).get("data", [None] * num_points)
+        })
+        
+        all_streams_data.append(streams_df)
+
+
+    print(f"Collected {len(all_streams_data)} GPS points.")
+
+    if all_streams_data:
+        final_df = pd.concat(all_streams_data, ignore_index=True)
+        print(f"Collected {len(final_df)} GPS points.")
+        return final_df
+    else:
+        print("No stream data collected.")
+        return pd.DataFrame()
 
 def write_data_to_csv(df, filename):
     folder_path = 'data'
